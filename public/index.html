@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Background Remover</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Background Remover</h1>
+<input type="file" id="imageInput" accept="image/*">
+<button id="removeBtn">Remove Background</button>
+<h3>Result:</h3>
+<img id="resultImage" style="max-width:500px; display:block; margin-top:10px;">
+
+<script>
+const removeBtn = document.getElementById("removeBtn");
+const imageInput = document.getElementById("imageInput");
+const resultImage = document.getElementById("resultImage");
+
+removeBtn.addEventListener("click", async () => {
+  if (!imageInput.files[0]) return alert("Select an image!");
+
+  const formData = new FormData();
+  formData.append("image", imageInput.files[0]);
+
+  try {
+    const res = await fetch("/remove-bg", {
+      method: "POST",
+      body: formData
+    });
+    const data = await res.json();
+    if (data.processedImage) {
+      resultImage.src = data.processedImage;
+    } else {
+      alert("Failed to remove background");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Error removing background");
+  }
+});
+</script>
+</body>
+</html>
