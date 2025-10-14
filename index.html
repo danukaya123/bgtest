@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Background Remover</title>
+</head>
+<body>
+  <h2>Upload an Image</h2>
+  <input type="file" id="fileInput" accept="image/*">
+  <button onclick="removeBg()">Remove Background</button>
+
+  <h3>Result:</h3>
+  <img id="resultImg" style="max-width:400px; margin-top:10px;"/>
+
+<script>
+const PROXY_URL = "https://removebg-cors.vercel.app/api/proxy";
+const HF_ENDPOINT = "https://hf.space/embed/Jonny001/Background-Remover-C1/api/predict/image";
+
+async function removeBg() {
+  const fileInput = document.getElementById("fileInput");
+  if (!fileInput.files.length) return alert("Please select an image!");
+
+  const file = fileInput.files[0];
+
+  const form = new FormData();
+  form.append("image", file); // ✅ Must match HF input name
+
+  try {
+    const res = await fetch(`${PROXY_URL}?url=${encodeURIComponent(HF_ENDPOINT)}`, {
+      method: "POST",
+      body: form
+    });
+
+    // Hugging Face returns JSON even if called through proxy
+    const json = await res.json();
+
+    if (!json || !json.data || !json.data[0]) {
+      console.error("HF Error:", json);
+      alert("Hugging Face did not return an image. Check console.");
+      return;
+    }
+
+    // Display processed image
+    document.getElementById("resultImg").src = json.data[0];
+
+  } catch (err) {
+    console.error("Proxy/Network error:", err);
+    alert("An error occurred. Check console for details.");
+  }
+}
+</script>
+</body>
+</html>
