@@ -21,20 +21,20 @@ export default function Home() {
     setResultUrl(null);
 
     try {
-      // Convert file to Blob (just like HF example)
+      // Convert uploaded file to Blob
       const blob = new Blob([file], { type: file.type });
 
+      // Connect to HF Space
       const client = await Client.connect("Jonny001/Background-Remover-C1");
 
-      const result = await client.predict("/image", {
-        image: blob, // ✅ Blob directly
-      });
+      // Call /image endpoint
+      const result = await client.predict("/image", { image: blob });
 
-      // HF returns an array, first item may be {url: "..."} or base64 string
+      // Extract actual URL or base64 string
       let url;
       if (Array.isArray(result.data)) {
         const first = result.data[0];
-        url = first?.url ?? first;
+        url = first?.url ?? first; // first could be {url: "..."} or a base64 string
       } else {
         url = result.data ?? result;
       }
