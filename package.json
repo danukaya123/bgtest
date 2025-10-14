@@ -1,0 +1,16 @@
+{
+"name": "huggingface-bg-remove-vercel",
+"version": "1.0.0",
+"private": true,
+"scripts": {
+"dev": "next dev",
+"build": "next build",
+"start": "next start"
+},
+"dependencies": {
+"next": "1.5.5",
+"react": "19.2.0",
+"react-dom": "19.2.0",
+"@gradio/client": "^1.19.1"
+}
+}
