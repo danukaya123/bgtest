@@ -24,18 +24,17 @@ export default function Home() {
       // Convert file to Blob
       const blob = new Blob([file], { type: file.type });
 
-      // Connect to your HF Space
+      // Connect to HF Space
       const client = await Client.connect("Jonny001/Background-Remover-C1");
 
       // Call /image endpoint
       const result = await client.predict("/image", { image: blob });
 
-      // HF Space returns an array of hosted URLs
+      // Extract URL string from the first object
       let url = null;
       if (Array.isArray(result.data) && result.data.length > 0) {
-        url = result.data[0]; // take the first URL
-      } else {
-        url = result.data; // fallback
+        const first = result.data[0];
+        url = first?.url ?? null; // get actual hosted URL
       }
 
       if (!url) throw new Error("Failed to get processed image URL from HF Space");
