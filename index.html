@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Background Remover Test</title>
+  <style>
+    body {
+      font-family: Inter, sans-serif;
+      background: #f9fafb;
+      color: #333;
+      text-align: center;
+      padding: 40px;
+    }
+    input[type="file"] {
+      margin: 20px 0;
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #1e40af;
+    }
+    img {
+      margin-top: 20px;
+      max-width: 400px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h1>🖼️ Background Remover Test</h1>
+  <p>Upload an image and see if your Hugging Face Space works!</p>
+
+  <input type="file" id="inputImage" accept="image/*">
+  <br>
+  <button id="processBtn">Remove Background</button>
+
+  <div id="output"></div>
+
+  <script type="module">
+    import { Client } from "https://esm.sh/@gradio/client@1.4.0";
+
+    const processBtn = document.getElementById("processBtn");
+    const inputImage = document.getElementById("inputImage");
+    const outputDiv = document.getElementById("output");
+
+    processBtn.addEventListener("click", async () => {
+      if (!inputImage.files[0]) {
+        alert("Please select an image first!");
+        return;
+      }
+
+      outputDiv.innerHTML = "⏳ Processing... Please wait";
+
+      try {
+        const client = await Client.connect("Jonny001/Background-Remover-C1");
+        const result = await client.predict("/text", {
+          image: inputImage.files[0]
+        });
+
+        console.log(result);
+
+        if (result?.data && result.data[0]?.url) {
+          outputDiv.innerHTML = `<img src="${result.data[0].url}" alt="Processed Image">`;
+        } else {
+          outputDiv.innerHTML = "⚠️ No image output returned. Check your Space endpoint or logs.";
+        }
+
+      } catch (err) {
+        console.error(err);
+        outputDiv.innerHTML = "❌ Error: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
