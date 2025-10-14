@@ -16,26 +16,7 @@ export default function Home() {
     setResultUrl(null);
     setError(null);
 
-    // Debug
     console.log("Uploaded file URL:", URL.createObjectURL(uploadedFile));
-  };
-
-  // Helper to recursively find first URL in an object/array
-  const findUrl = (data) => {
-    if (!data) return null;
-    if (typeof data === "string" && data.startsWith("http")) return data;
-    if (Array.isArray(data)) {
-      for (let item of data) {
-        const found = findUrl(item);
-        if (found) return found;
-      }
-    } else if (typeof data === "object") {
-      for (let key in data) {
-        const found = findUrl(data[key]);
-        if (found) return found;
-      }
-    }
-    return null;
   };
 
   const handleRemoveBackground = async () => {
@@ -45,21 +26,26 @@ export default function Home() {
     setResultUrl(null);
 
     try {
-      const blob = new Blob([file], { type: file.type });
-      console.log("Blob created:", blob);
-
       const client = await Client.connect("Jonny001/Background-Remover-C1");
       console.log("Connected to HF Space");
 
-      const result = await client.predict("/image", { image: blob });
+      // Create temporary URL for the uploaded image
+      const imageUrl = URL.createObjectURL(file);
+      console.log("Temporary image URL:", imageUrl);
+
+      // API expects a dictionary with 'url' property
+      const result = await client.predict("/image", {
+        image: { url: imageUrl },
+      });
       console.log("HF Space raw result:", result);
 
-      const url = findUrl(result.data);
-      console.log("Processed image URL:", url);
+      // The processed image URL is in the first tuple element
+      const processedUrl = result?.[0]?.url;
+      console.log("Processed image URL:", processedUrl);
 
-      if (!url) throw new Error("No URL found in HF Space response");
+      if (!processedUrl) throw new Error("No URL found in HF Space response");
 
-      setResultUrl(url);
+      setResultUrl(processedUrl);
     } catch (err) {
       console.error("Error during background removal:", err);
       setError(err.message);
