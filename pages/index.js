@@ -16,9 +16,26 @@ export default function Home() {
     setResultUrl(null);
     setError(null);
 
-    // Debug: show uploaded image URL (local blob)
-    const objectUrl = URL.createObjectURL(uploadedFile);
-    console.log("Uploaded file URL:", objectUrl);
+    // Debug
+    console.log("Uploaded file URL:", URL.createObjectURL(uploadedFile));
+  };
+
+  // Helper to recursively find first URL in an object/array
+  const findUrl = (data) => {
+    if (!data) return null;
+    if (typeof data === "string" && data.startsWith("http")) return data;
+    if (Array.isArray(data)) {
+      for (let item of data) {
+        const found = findUrl(item);
+        if (found) return found;
+      }
+    } else if (typeof data === "object") {
+      for (let key in data) {
+        const found = findUrl(data[key]);
+        if (found) return found;
+      }
+    }
+    return null;
   };
 
   const handleRemoveBackground = async () => {
@@ -31,34 +48,17 @@ export default function Home() {
       const blob = new Blob([file], { type: file.type });
       console.log("Blob created:", blob);
 
-      // Connect to HF Space
       const client = await Client.connect("Jonny001/Background-Remover-C1");
       console.log("Connected to HF Space");
 
-      // Call /image endpoint
       const result = await client.predict("/image", { image: blob });
       console.log("HF Space raw result:", result);
 
-      // Extract result URL safely
-      let url = null;
-      if (Array.isArray(result.data) && result.data.length > 0) {
-        const first = result.data[0];
-        console.log("First item from result.data:", first);
-
-        if (typeof first === "string") {
-          url = first; // direct URL string
-        } else if (first?.url) {
-          url = first.url; // object with url property
-        } else {
-          console.warn("Unknown result format from HF Space:", first);
-        }
-      } else if (typeof result.data === "string") {
-        url = result.data; // fallback
-      }
+      const url = findUrl(result.data);
+      console.log("Processed image URL:", url);
 
       if (!url) throw new Error("No URL found in HF Space response");
 
-      console.log("Processed image URL:", url);
       setResultUrl(url);
     } catch (err) {
       console.error("Error during background removal:", err);
@@ -69,7 +69,7 @@ export default function Home() {
   };
 
   return (
-    <div style={{ padding: "40px", textAlign: "center", fontFamily: "Inter, sans-serif" }}>
+    <div style={{ padding: "40px", textAlign: "center" }}>
       <h1>🪄 Image Background Remover</h1>
       <p>Upload an image and remove its background using Hugging Face Space API.</p>
 
