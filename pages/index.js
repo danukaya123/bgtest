@@ -8,7 +8,7 @@ export default function Home() {
   const [resultUrl, setResultUrl] = useState(null);
   const [error, setError] = useState(null);
 
-  // Convert file to base64 for HF Space
+  // Convert file to base64
   const fileToBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -30,40 +30,41 @@ export default function Home() {
     setError(null);
 
     try {
-      // Convert to base64
+      // Convert uploaded file to base64
       const base64 = await fileToBase64(file);
       console.log("Base64 image length:", base64.length);
+
+      // Prepare input for HF Space API
+      const inputImage = {
+        path: undefined,
+        url: base64,
+        size: file.size,
+        orig_name: file.name,
+        mime_type: file.type,
+        is_stream: false,
+        meta: {},
+      };
+      console.log("Input image object:", inputImage);
 
       // Connect to HF Space
       const client = await Client.connect("Jonny001/Background-Remover-C1");
       console.log("Connected to HF Space");
 
-      // Call API
-      const result = await client.predict("/image", {
-        image: { url: base64 },
-      });
+      // Call the /image API
+      const result = await client.predict("/image", { image: inputImage });
       console.log("HF Space raw result:", result);
 
-      // Extract processed image URL
-      const output = result?.data?.[0];
-      console.log("First item from result.data:", output);
+      // HF Space returns a tuple: [processedImageObj, originalImageObj]
+      const processedObj = Array.isArray(result.data) ? result.data[0] : null;
+      console.log("Processed object:", processedObj);
 
-      let processedUrl = null;
-
-      if (output) {
-        if (typeof output === "string") {
-          processedUrl = output; // sometimes it's a string URL
-        } else if (output.url) {
-          processedUrl = output.url; // object with url field
-        } else if (output.path) {
-          // convert path to HF URL if needed
-          processedUrl = output.path;
-        }
+      if (!processedObj || (!processedObj.url && !processedObj.path)) {
+        throw new Error("No URL found in HF Space response");
       }
 
-      if (!processedUrl) throw new Error("No URL found in HF Space response");
-
+      const processedUrl = processedObj.url || processedObj.path;
       console.log("Processed image URL:", processedUrl);
+
       setResultUrl(processedUrl);
     } catch (err) {
       console.error("Error during background removal:", err);
@@ -105,31 +106,51 @@ export default function Home() {
       {resultUrl && (
         <div style={{ marginTop: "30px" }}>
           <h3>Result:</h3>
-          <img
-            src={resultUrl}
-            alt="result"
-            style={{
-              maxWidth: "100%",
-              borderRadius: "10px",
-              boxShadow: "0 0 10px rgba(0,0,0,0.3)",
-            }}
-          />
-          <br />
-          <a
-            href={resultUrl}
-            download="removed-bg.png"
-            style={{
-              display: "inline-block",
-              marginTop: "10px",
-              background: "#10b981",
-              color: "white",
-              padding: "8px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-            }}
-          >
-            ⬇️ Download
-          </a>
+          <div style={{ display: "flex", justifyContent: "center", gap: "20px", flexWrap: "wrap" }}>
+            {/* Original image */}
+            <div>
+              <p>Original:</p>
+              <img
+                src={URL.createObjectURL(file)}
+                alt="original"
+                style={{
+                  maxWidth: "300px",
+                  borderRadius: "10px",
+                  boxShadow: "0 0 10px rgba(0,0,0,0.3)",
+                }}
+              />
+            </div>
+
+            {/* Processed image */}
+            <div>
+              <p>Background Removed:</p>
+              <img
+                src={resultUrl}
+                alt="processed"
+                style={{
+                  maxWidth: "300px",
+                  borderRadius: "10px",
+                  boxShadow: "0 0 10px rgba(0,0,0,0.3)",
+                }}
+              />
+              <br />
+              <a
+                href={resultUrl}
+                download="removed-bg.png"
+                style={{
+                  display: "inline-block",
+                  marginTop: "10px",
+                  background: "#10b981",
+                  color: "white",
+                  padding: "8px 14px",
+                  borderRadius: "6px",
+                  textDecoration: "none",
+                }}
+              >
+                ⬇️ Download
+              </a>
+            </div>
+          </div>
         </div>
       )}
     </div>
