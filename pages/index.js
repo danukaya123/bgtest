@@ -20,7 +20,7 @@ export default function Home() {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
+      reader.onerror = (err) => reject(err);
     });
 
   const handleRemoveBackground = async () => {
@@ -30,20 +30,20 @@ export default function Home() {
     setResultUrl(null);
 
     try {
-      // Convert file to base64 for HF client
       const base64Image = await toBase64(file);
 
       const client = await Client.connect("Jonny001/Background-Remover-C1");
 
+      // Send image in proper object format
       const result = await client.predict("/image", {
-        image: base64Image,
+        image: { name: file.name, data: base64Image },
       });
 
-      // Normalize response to get a string URL or base64
+      // Normalize the response
       let url;
       if (Array.isArray(result.data)) {
         const first = result.data[0];
-        url = first?.url ?? first; // first could be base64 string
+        url = first?.url ?? first; // could be URL or base64 string
       } else {
         url = result.data ?? result;
       }
@@ -58,9 +58,9 @@ export default function Home() {
   };
 
   return (
-    <div style={{ padding: "40px", textAlign: "center" }}>
+    <div style={{ padding: "40px", textAlign: "center", fontFamily: "Inter, sans-serif" }}>
       <h1>🪄 Image Background Remover</h1>
-      <p>Upload an image and remove its background using your Hugging Face Space API.</p>
+      <p>Upload an image and remove its background using Hugging Face Space.</p>
 
       <input type="file" accept="image/*" onChange={handleFileChange} />
       <UploadPreview file={file} />
