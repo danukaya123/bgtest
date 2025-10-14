@@ -1,33 +1,33 @@
 import { useState } from "react";
+import { Client } from "@gradio/client";
 import UploadPreview from "../components/UploadPreview";
 
 export default function Home() {
-  const [imageUrl, setImageUrl] = useState("");
-  const [fileDataUrl, setFileDataUrl] = useState(null);
+  const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState(null);
   const [error, setError] = useState(null);
 
-  async function handleRemove() {
-    setError(null);
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
     setResultUrl(null);
+    setError(null);
+  };
+
+  const handleRemoveBackground = async () => {
+    if (!file) return alert("Please select an image first!");
     setLoading(true);
+    setError(null);
 
     try {
-      const body = fileDataUrl
-        ? { imageBase64: fileDataUrl }
-        : { imageUrl };
+      const blob = new Blob([file], { type: file.type });
+      const client = await Client.connect("Jonny001/Background-Remover-C1");
 
-      const res = await fetch("/api/remove-bg", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+      const result = await client.predict("/image", {
+        image: blob,
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Request failed");
-
-      const first = Array.isArray(data) ? data[0] : data?.data?.[0] ?? data[0];
+      const first = result.data[0];
       const url = first?.url ?? first;
       setResultUrl(url);
     } catch (err) {
@@ -36,77 +36,65 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <div style={{ fontFamily: "Inter, Roboto, sans-serif", padding: 24 }}>
-      <h1>🖼️ HuggingFace Background Remover</h1>
+    <div style={{ padding: "40px", textAlign: "center" }}>
+      <h1>🪄 Image Background Remover</h1>
+      <p>Upload an image and remove its background using your Hugging Face Space API.</p>
 
-      <section style={{ marginTop: 24 }}>
-        <h2>1️⃣ Paste image URL</h2>
-        <input
-          type="text"
-          placeholder="https://example.com/photo.jpg"
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
+      <input type="file" accept="image/*" onChange={handleFileChange} />
+      <UploadPreview file={file} />
+
+      <div style={{ marginTop: "20px" }}>
+        <button
+          onClick={handleRemoveBackground}
+          disabled={loading}
           style={{
-            width: "100%",
-            padding: 8,
-            fontSize: 16,
-            border: "1px solid #ccc",
-            borderRadius: 6,
+            padding: "10px 20px",
+            background: "#0070f3",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
           }}
-        />
-      </section>
+        >
+          {loading ? "Processing..." : "Remove Background"}
+        </button>
+      </div>
 
-      <section style={{ marginTop: 24 }}>
-        <h2>Or upload a file</h2>
-        <UploadPreview
-          onDataUrl={(d) => {
-            setFileDataUrl(d);
-            setImageUrl("");
-          }}
-        />
-      </section>
-
-      <button
-        onClick={handleRemove}
-        disabled={loading || (!imageUrl && !fileDataUrl)}
-        style={{
-          marginTop: 20,
-          padding: "10px 16px",
-          fontSize: 16,
-          backgroundColor: "#0070f3",
-          color: "white",
-          border: "none",
-          borderRadius: 6,
-          cursor: "pointer",
-        }}
-      >
-        {loading ? "Removing..." : "Remove Background"}
-      </button>
-
-      {error && (
-        <div style={{ color: "crimson", marginTop: 12 }}>{error}</div>
-      )}
+      {error && <p style={{ color: "red", marginTop: "20px" }}>❌ {error}</p>}
 
       {resultUrl && (
-        <div style={{ marginTop: 24 }}>
-          <h3>Result</h3>
-          <img src={resultUrl} alt="result" style={{ maxWidth: "100%" }} />
-          <p>
-            <a href={resultUrl} target="_blank" rel="noreferrer">
-              Open image in new tab
-            </a>
-          </p>
+        <div style={{ marginTop: "30px" }}>
+          <h3>Result:</h3>
+          <img
+            src={resultUrl}
+            alt="result"
+            style={{
+              maxWidth: "100%",
+              borderRadius: "10px",
+              boxShadow: "0 0 10px rgba(0,0,0,0.3)",
+            }}
+          />
+          <br />
+          <a
+            href={resultUrl}
+            download="removed-bg.png"
+            style={{
+              display: "inline-block",
+              marginTop: "10px",
+              background: "#10b981",
+              color: "white",
+              padding: "8px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+            }}
+          >
+            ⬇️ Download
+          </a>
         </div>
       )}
-
-      <footer style={{ marginTop: 48, color: "#666" }}>
-        <small>
-          Powered by <code>Jonny001/Background-Remover-C1</code> on Hugging Face
-        </small>
-      </footer>
     </div>
   );
 }
