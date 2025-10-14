@@ -21,7 +21,7 @@ export default function Home() {
     setResultUrl(null);
 
     try {
-      // Convert uploaded file to Blob
+      // Convert file to Blob (HF Space expects Blob)
       const blob = new Blob([file], { type: file.type });
 
       // Connect to HF Space
@@ -30,14 +30,14 @@ export default function Home() {
       // Call /image endpoint
       const result = await client.predict("/image", { image: blob });
 
-      // Extract actual URL or base64 string
-      let url;
+      // Extract actual URL from returned array of objects
+      let url = null;
       if (Array.isArray(result.data)) {
         const first = result.data[0];
-        url = first?.url ?? first; // first could be {url: "..."} or a base64 string
-      } else {
-        url = result.data ?? result;
+        url = first?.url ?? null; // HF Space file URL
       }
+
+      if (!url) throw new Error("Failed to get processed image URL from HF Space");
 
       setResultUrl(url);
     } catch (err) {
