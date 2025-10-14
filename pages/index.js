@@ -14,21 +14,40 @@ export default function Home() {
     setError(null);
   };
 
+  // Convert file to base64
+  const toBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+
   const handleRemoveBackground = async () => {
     if (!file) return alert("Please select an image first!");
     setLoading(true);
     setError(null);
+    setResultUrl(null);
 
     try {
-      const blob = new Blob([file], { type: file.type });
+      // Convert file to base64 for HF client
+      const base64Image = await toBase64(file);
+
       const client = await Client.connect("Jonny001/Background-Remover-C1");
 
       const result = await client.predict("/image", {
-        image: blob,
+        image: base64Image,
       });
 
-      const first = result.data[0];
-      const url = first?.url ?? first;
+      // Normalize response to get a string URL or base64
+      let url;
+      if (Array.isArray(result.data)) {
+        const first = result.data[0];
+        url = first?.url ?? first; // first could be base64 string
+      } else {
+        url = result.data ?? result;
+      }
+
       setResultUrl(url);
     } catch (err) {
       console.error(err);
