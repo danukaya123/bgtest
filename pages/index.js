@@ -18,10 +18,11 @@ export default function Home() {
     });
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const uploaded = e.target.files[0];
+    setFile(uploaded);
     setResultUrl(null);
     setError(null);
-    console.log("Uploaded file:", e.target.files[0]);
+    console.log("Uploaded file:", uploaded);
   };
 
   const handleRemoveBackground = async () => {
@@ -30,11 +31,11 @@ export default function Home() {
     setError(null);
 
     try {
-      // Convert uploaded file to base64
+      // Convert to base64
       const base64 = await fileToBase64(file);
       console.log("Base64 image length:", base64.length);
 
-      // Prepare input for HF Space API
+      // Build input object for HF Space
       const inputImage = {
         path: undefined,
         url: base64,
@@ -54,15 +55,16 @@ export default function Home() {
       const result = await client.predict("/image", { image: inputImage });
       console.log("HF Space raw result:", result);
 
-      // HF Space returns a tuple: [processedImageObj, originalImageObj]
+      // HF Space returns tuple: [processedImageObj, originalImageObj]
       const processedObj = Array.isArray(result.data) ? result.data[0] : null;
       console.log("Processed object:", processedObj);
 
-      if (!processedObj || (!processedObj.url && !processedObj.path)) {
-        throw new Error("No URL found in HF Space response");
+      if (!processedObj || !processedObj.path) {
+        throw new Error("No path found in HF Space response");
       }
 
-      const processedUrl = processedObj.url || processedObj.path;
+      // Construct proper URL
+      const processedUrl = `https://jonny001-background-remover-c1.hf.space/file=${processedObj.path}`;
       console.log("Processed image URL:", processedUrl);
 
       setResultUrl(processedUrl);
@@ -104,52 +106,46 @@ export default function Home() {
       )}
 
       {resultUrl && (
-        <div style={{ marginTop: "30px" }}>
-          <h3>Result:</h3>
-          <div style={{ display: "flex", justifyContent: "center", gap: "20px", flexWrap: "wrap" }}>
-            {/* Original image */}
-            <div>
-              <p>Original:</p>
-              <img
-                src={URL.createObjectURL(file)}
-                alt="original"
-                style={{
-                  maxWidth: "300px",
-                  borderRadius: "10px",
-                  boxShadow: "0 0 10px rgba(0,0,0,0.3)",
-                }}
-              />
-            </div>
-
-            {/* Processed image */}
-            <div>
-              <p>Background Removed:</p>
-              <img
-                src={resultUrl}
-                alt="processed"
-                style={{
-                  maxWidth: "300px",
-                  borderRadius: "10px",
-                  boxShadow: "0 0 10px rgba(0,0,0,0.3)",
-                }}
-              />
-              <br />
-              <a
-                href={resultUrl}
-                download="removed-bg.png"
-                style={{
-                  display: "inline-block",
-                  marginTop: "10px",
-                  background: "#10b981",
-                  color: "white",
-                  padding: "8px 14px",
-                  borderRadius: "6px",
-                  textDecoration: "none",
-                }}
-              >
-                ⬇️ Download
-              </a>
-            </div>
+        <div style={{ marginTop: "30px", display: "flex", justifyContent: "center", gap: "20px", flexWrap: "wrap" }}>
+          <div>
+            <h3>Original:</h3>
+            <img
+              src={URL.createObjectURL(file)}
+              alt="original"
+              style={{
+                maxWidth: "300px",
+                borderRadius: "10px",
+                boxShadow: "0 0 10px rgba(0,0,0,0.3)",
+              }}
+            />
+          </div>
+          <div>
+            <h3>Processed:</h3>
+            <img
+              src={resultUrl}
+              alt="processed"
+              style={{
+                maxWidth: "300px",
+                borderRadius: "10px",
+                boxShadow: "0 0 10px rgba(0,0,0,0.3)",
+              }}
+            />
+            <br />
+            <a
+              href={resultUrl}
+              download="removed-bg.png"
+              style={{
+                display: "inline-block",
+                marginTop: "10px",
+                background: "#10b981",
+                color: "white",
+                padding: "8px 14px",
+                borderRadius: "6px",
+                textDecoration: "none",
+              }}
+            >
+              ⬇️ Download
+            </a>
           </div>
         </div>
       )}
