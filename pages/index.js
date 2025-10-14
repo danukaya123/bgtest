@@ -30,11 +30,12 @@ export default function Home() {
       // Call /image endpoint
       const result = await client.predict("/image", { image: blob });
 
-      // Extract URL string from the first object
+      // result.data might be an array of strings
       let url = null;
       if (Array.isArray(result.data) && result.data.length > 0) {
-        const first = result.data[0];
-        url = first?.url ?? null; // get actual hosted URL
+        url = result.data[0]; // take the first string URL directly
+      } else if (typeof result.data === "string") {
+        url = result.data; // fallback: just in case
       }
 
       if (!url) throw new Error("Failed to get processed image URL from HF Space");
