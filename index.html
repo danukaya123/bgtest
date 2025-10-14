@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Background Remover Test</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Background Remover API Test</title>
   <style>
     body {
       font-family: Inter, sans-serif;
@@ -12,15 +12,21 @@
       text-align: center;
       padding: 40px;
     }
-    input[type="file"] {
-      margin: 20px 0;
+    input[type="text"] {
+      width: 80%;
+      max-width: 400px;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
     }
     button {
+      margin-top: 15px;
       background-color: #2563eb;
       color: white;
       border: none;
       padding: 10px 20px;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
       font-size: 16px;
     }
@@ -28,7 +34,7 @@
       background-color: #1e40af;
     }
     img {
-      margin-top: 20px;
+      margin-top: 25px;
       max-width: 400px;
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -36,10 +42,10 @@
   </style>
 </head>
 <body>
-  <h1>🖼️ Background Remover Test</h1>
-  <p>Upload an image and see if your Hugging Face Space works!</p>
+  <h1>🧠 Background Remover API Test</h1>
+  <p>Paste an image URL below and test your Hugging Face API.</p>
 
-  <input type="file" id="inputImage" accept="image/*">
+  <input type="text" id="imgUrl" placeholder="Enter image URL here">
   <br>
   <button id="processBtn">Remove Background</button>
 
@@ -48,35 +54,38 @@
   <script type="module">
     import { Client } from "https://esm.sh/@gradio/client@1.4.0";
 
-    const processBtn = document.getElementById("processBtn");
-    const inputImage = document.getElementById("inputImage");
-    const outputDiv = document.getElementById("output");
+    const btn = document.getElementById("processBtn");
+    const input = document.getElementById("imgUrl");
+    const output = document.getElementById("output");
 
-    processBtn.addEventListener("click", async () => {
-      if (!inputImage.files[0]) {
-        alert("Please select an image first!");
+    btn.addEventListener("click", async () => {
+      const url = input.value.trim();
+      if (!url) {
+        alert("Please enter a valid image URL!");
         return;
       }
 
-      outputDiv.innerHTML = "⏳ Processing... Please wait";
+      output.innerHTML = "⏳ Processing... Please wait.";
 
       try {
         const client = await Client.connect("Jonny001/Background-Remover-C1");
         const result = await client.predict("/text", {
-          image: inputImage.files[0]
+          image: url, // send image URL instead of file
         });
 
         console.log(result);
 
+        // Try to detect and show output
         if (result?.data && result.data[0]?.url) {
-          outputDiv.innerHTML = `<img src="${result.data[0].url}" alt="Processed Image">`;
+          output.innerHTML = `<img src="${result.data[0].url}" alt="Processed Result">`;
+        } else if (typeof result.data === "string") {
+          output.innerHTML = `<img src="${result.data}" alt="Processed Result">`;
         } else {
-          outputDiv.innerHTML = "⚠️ No image output returned. Check your Space endpoint or logs.";
+          output.innerHTML = "⚠️ No image returned. Check your Space endpoint name or logs.";
         }
-
       } catch (err) {
         console.error(err);
-        outputDiv.innerHTML = "❌ Error: " + err.message;
+        output.innerHTML = "❌ Error: " + err.message;
       }
     });
   </script>
